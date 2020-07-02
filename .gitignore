@@ -1,0 +1,6 @@
+.idea/
+Pipfile
+Pipfile.lock
+*.txt
+NetHealth Data/
+__pycache__/
