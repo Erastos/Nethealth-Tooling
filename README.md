@@ -1,7 +1,7 @@
 # Nethealth Tooling
 
 ## Dependencies
-1. Python3
+1. Python 3.7 or newer
 2. Networkx
 3. Pandas
 
