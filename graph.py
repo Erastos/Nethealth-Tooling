@@ -76,11 +76,14 @@ def graph_merge(comm, merge_threshold):
     g1 = create_graph(t_1)
     initial_groups = [group for group in nx.connected_components(g1) if len(group) > 2]
     prev_groups = initial_groups
+    results = []
     for t_i in gs:
         g = create_graph(t_i)
         scc = [group for group in nx.connected_components(g) if len(group) > 2]
         result_groups = naive_merging(prev_groups, scc, merge_threshold)
         prev_groups = result_groups
+        results.append(result_groups)
+    return results[-1]
 
 
 if __name__ == '__main__':
