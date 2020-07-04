@@ -3,10 +3,6 @@ import pandas as pd
 from GraphClasses import CommEvent, idNode
 from pandas_load import open_files
 
-NUM_RECORDS = 200000
-
-network, basic, comm = open_files(NUM_RECORDS)
-
 
 def create_graph(slice):
     """Creates Networkx undirected graph of communication events of a given slice"""
@@ -33,8 +29,8 @@ def get_snapshots(slice):
     slice["datetime"] = datetime
     slice = slice.set_index("datetime")
 
-    start_date = (comm[:1]["date"] + ' ' + comm[:1]["time"]).to_list()[0]
-    end_date = (comm[-1:]["date"] + ' ' + comm[-1:]["time"]).to_list()[0]
+    start_date = (slice[:1]["date"] + ' ' + slice[:1]["time"]).to_list()[0]
+    end_date = (slice[-1:]["date"] + ' ' + slice[-1:]["time"]).to_list()[0]
 
     dates = pd.date_range(start_date, end_date, freq='D').to_list()
     if end_date not in dates:
@@ -73,7 +69,7 @@ def naive_merging(time_1, time_2, merge_threshold):
     return result
 
 
-def graph_merge():
+def graph_merge(comm):
     """Graph merging driver function"""
     gs = get_snapshots(comm)
     t_1 = next(gs)
@@ -88,4 +84,6 @@ def graph_merge():
 
 
 if __name__ == '__main__':
-    graph_merge()
+    NUM_RECORDS = 200000
+    network, basic, comm = open_files(NUM_RECORDS)
+    graph_merge(comm)
