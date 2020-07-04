@@ -44,7 +44,7 @@ def naive_merging(time_1, time_2, merge_threshold):
     merged_groups = []
     for i in range(len(time_1)):
         for j in range(len(time_2)):
-            if len(time_1[i].symmetric_difference(time_2[j])) < merge_threshold:
+            if len(time_1[i].symmetric_difference(time_2[j])) <= merge_threshold:
                 merged_groups.append(time_1[i].union(time_2[j]))
                 break
     result = []
@@ -69,7 +69,7 @@ def naive_merging(time_1, time_2, merge_threshold):
     return result
 
 
-def graph_merge(comm):
+def graph_merge(comm, merge_threshold):
     """Graph merging driver function"""
     gs = get_snapshots(comm)
     t_1 = next(gs)
@@ -79,11 +79,11 @@ def graph_merge(comm):
     for t_i in gs:
         g = create_graph(t_i)
         scc = [group for group in nx.connected_components(g) if len(group) > 2]
-        result_groups = naive_merging(prev_groups, scc, 3)
+        result_groups = naive_merging(prev_groups, scc, merge_threshold)
         prev_groups = result_groups
 
 
 if __name__ == '__main__':
     NUM_RECORDS = 200000
     network, basic, comm = open_files(NUM_RECORDS)
-    graph_merge(comm)
+    graph_merge(comm, 3)
