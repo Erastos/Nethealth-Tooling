@@ -1,6 +1,6 @@
 import pandas as pd
 from GraphClasses import CommEvent, idNode
-from pandas_load import open_files
+from pandas_load import open_files, remove_outlier_data
 from math import floor
 import igraph
 
@@ -38,6 +38,7 @@ def get_snapshots(slice):
     if end_date not in dates:
         dates.append(end_date)
     for i in range(len(dates) - 1):
+        print("{} -> {}".format(dates[i], dates[i+1]))
         yield slice[str(dates[i]):str(dates[i + 1])]
 
 
@@ -131,6 +132,7 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
 
 def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fraction):
     """Graph merging driver function"""
+    comm = remove_outlier_data(comm)
     gs = get_snapshots(comm)
     t_1 = next(gs)
     g1 = create_graph(t_1)

@@ -22,7 +22,10 @@ def open_files(number_of_records):
     """Open Nethealth Data Files"""
     network = pd.read_csv(files["Network Survey"], low_memory=False)
     basic = pd.read_csv(files["Basic Survey"], low_memory=False)
-    comm = pd.read_csv(files["CommEvents"], nrows=number_of_records, low_memory=False)
+    if number_of_records == 0:
+        comm = pd.read_csv(files["CommEvents"], low_memory=False)
+    else:
+        comm = pd.read_csv(files["CommEvents"], nrows=number_of_records, low_memory=False)
     return network, basic, comm
 
 
@@ -32,7 +35,7 @@ def retrieve_ego_data(egoID):
     return comm[egoID_data]
 
 
-def remove_outlier_data():
+def remove_outlier_data(comm):
     """Removes outlier communication data as specified by the Nethealth Study"""
     # Remove Calls of 0 Duration
     calls = comm["eventtype"] == "Call"
@@ -50,6 +53,7 @@ def remove_outlier_data():
     # WhatsApp Group Messages
     whats_app_gc = comm[comm["eventtypedetail"] == "GC"].index
     comm.drop(whats_app_gc, inplace=True)
+    return comm
 
 
 def collect_clubs():
