@@ -1,26 +1,27 @@
-import networkx as nx
 import pandas as pd
 from GraphClasses import CommEvent, idNode
 from pandas_load import open_files
 from math import floor
+import igraph
 
 
 def create_graph(slice):
     """Creates Networkx undirected graph of communication events of a given slice"""
-    graph = nx.Graph()
+    graph = igraph.Graph()
     for index, row in slice.iterrows():
         ego_node = idNode(row["egoid"], "Ego")
         alter_node = idNode(row["alterid"], "Alter")
 
-        if ego_node.id not in graph:
-            graph.add_node(ego_node.id, data=ego_node)
+        if len(graph.vs) == 0 or ego_node.id not in list(graph.vs['name']):
+            graph.add_vertex(ego_node.id)
 
         if 10000 <= alter_node.id <= 99999:
-            if alter_node not in graph:
-                graph.add_node(alter_node.id, data=alter_node)
+            if len(list(graph.vs)) == 0 or alter_node.id not in list(graph.vs['name']):
+                graph.add_vertex(alter_node.id)
 
-            comm_event = CommEvent(row["egoid"], row["alterid"], row["epochtime"])
-            graph.add_edge(ego_node.id, alter_node.id, event=comm_event)
+            # comm_event = CommEvent(row["egoid"], row["alterid"], row["epochtime"])
+            graph.add_edge(graph.vs.select(lambda vertex: vertex['name'] == ego_node.id)[0],
+                           graph.vs.select(lambda vertex: vertex['name'] == alter_node.id)[0])
     return graph
 
 
@@ -133,7 +134,7 @@ def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fractio
     gs = get_snapshots(comm)
     t_1 = next(gs)
     g1 = create_graph(t_1)
-    initial_groups = [group for group in nx.connected_components(g1) if len(group) > 2]
+    initial_groups = [{g1.vs[group[i]]['name'] for i in range(len(group))} for group in g1.clusters() if len(group) > 2]
     initial_groups = list(map(frozenset, initial_groups))
     initial_groups_meeting = {group: 1 for group in initial_groups}
 
@@ -148,7 +149,7 @@ def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fractio
     t_i_counter = 1
     for t_i in gs:
         g = create_graph(t_i)
-        scc = [group for group in nx.connected_components(g) if len(group) > 2]
+        scc = [{g.vs[group[i]]['name'] for i in range(len(group))} for group in g.clusters() if len(group) > 2]
         scc = list(map(frozenset, scc))
         scc_meeting = {group: 1 for group in scc}
 
