@@ -43,7 +43,7 @@ def get_snapshots(slice):
 
 
 def generate_lifetime_group_table(groupset, table, compare_table, mergedSet=None, exist=False):
-    """Create Group Lifetime Table"""
+    """Create Group Lifetime Table, a table which contains a egoids's attendance number per individual group"""
     if mergedSet:
         set_to_add = mergedSet
     else:
@@ -87,14 +87,18 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
     merged_groups = []
     result_meeting = {}
     result_lifetime_table = {}
+    # Merge Components Above a Certain Threshold
     for i in range(len(time_1)):
         for j in range(len(time_2)):
+            # Calculate Member Sets, sets containing people who attended meetings above a certain fraction (personal meetings/total group meetings)
             member_set_i = get_member_set(time_1[i], time_1_meetings, time_1_lifetime_table, meetings_fraction)
             member_set_j = get_member_set(time_2[j], time_2_meetings, time_2_lifetime_table, meetings_fraction)
+            # Member Amount Criteria holds after a certain amount of time as set by Time to Meetings
             if len(time_1[i].symmetric_difference(time_2[j])) <= merge_threshold \
                     and (not meetings_fraction or len(member_set_i.symmetric_difference(member_set_j)) <= merge_threshold):
 
                 group = time_1[i].union(time_2[j])
+                # If a group is merged, then it means that it existed in the next time slice, meaning that it had another meeting (Assumption that could be wrong)
                 merged_groups.append(group)
                 result_meeting[group] = time_1_meetings[time_1[i]] + 1
                 result_lifetime_table = generate_lifetime_group_table(time_2[j], result_lifetime_table,
@@ -108,6 +112,7 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
                 break
         if not is_subset:
             result.append(time_1[i])
+            # Time 1 Group and Egoid Meeting Attendance are not incremented here, as time_1 is the combined results from all other previous time slices
             result_meeting[time_1[i]] = time_1_meetings[time_1[i]]
 
             result_lifetime_table = generate_lifetime_group_table(time_1[i], result_lifetime_table,
@@ -120,6 +125,7 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
                 is_subset = True
                 break
         if not is_subset:
+            # Time 2 Group and Egoid Meeting Attendence are not incremented here as this is created in the graph_merge function
             result.append(time_2[j])
             result_meeting[time_2[j]] = time_2_meetings[time_2[j]]
 
@@ -132,10 +138,14 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
 
 def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fraction):
     """Graph merging driver function"""
+
     comm = remove_outlier_data(comm)
     gs = get_snapshots(comm)
+
+    # Initial Data Population
     t_1 = next(gs)
     g1 = create_graph(t_1)
+    # Gets Collected Components of len greater than 2
     initial_groups = [{g1.vs[group[i]]['name'] for i in range(len(group))} for group in g1.clusters() if len(group) > 2]
     initial_groups = list(map(frozenset, initial_groups))
     initial_groups_meeting = {group: 1 for group in initial_groups}
@@ -159,7 +169,6 @@ def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fractio
         for group in scc:
             scc_group_lifetime_table = generate_lifetime_group_table(group, scc_group_lifetime_table, {})
 
-        # print(prev_groups_meeting)
         result_groups, result_group_meetings, result_group_lifetime_table = merge_algo(prev_groups,
                                                                                        prev_groups_meeting,
                                                                                        prev_group_lifetime_table,
