@@ -6,6 +6,7 @@ from math import floor
 import igraph
 import datetime
 import time
+import sys
 
 
 def create_graph(slice):
@@ -226,7 +227,12 @@ def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fractio
 
 if __name__ == '__main__':
     NUM_RECORDS = 200000
-    comm, basic, network = open_files(NUM_RECORDS)
+    files = {
+        "Comm": sys.argv[1],
+        "Basic": sys.argv[2],
+        "Network": sys.argv[3]
+    }
+    comm, basic, network = open_files(files, NUM_RECORDS)
     result = graph_merge(comm, 3, 0.5, 1)
     print(result[1])
 

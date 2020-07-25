@@ -18,7 +18,12 @@ def create_data(data):
 
 
 if __name__ == '__main__':
-    comm, basic, network = open_files(int(sys.argv[1]))
+    files = {
+        "Comm": sys.argv[1],
+        "Basic": sys.argv[2],
+        "Network": sys.argv[3]
+    }
+    comm, basic, network = open_files(files, int(sys.argv[4]))
 
     data = graph_merge(comm, 3, 0.5, 3)
     results = create_data(data)

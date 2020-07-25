@@ -44,7 +44,7 @@ def load_data(filename, numRecords):
     return result
 
 
-def open_files(numRecords):
+def open_files(files, numRecords):
     comm = load_data(files['Comm'], numRecords)
     basic = load_data(files['Basic'], 0)
     network = load_data(files['Network'], 0)
