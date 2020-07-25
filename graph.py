@@ -32,7 +32,7 @@ def get_date_range(start_date, end_date):
     start_datetime = datetime.datetime(*time.strptime(start_date, "%Y-%m-%d %H:%M:%S")[:6])
     end_datetime = datetime.datetime(*time.strptime(end_date, "%Y-%m-%d %H:%M:%S")[:6])
 
-    time_delta = datetime.timedelta(days=1)
+    time_delta = datetime.timedelta(hours=8)
     date_range = [start_datetime]
     while date_range[-1] < end_datetime:
         date_range.append(date_range[-1] + time_delta)
