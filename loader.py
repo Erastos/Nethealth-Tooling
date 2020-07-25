@@ -4,7 +4,7 @@ import csv
 NOTE: This file is outdated. Use pandas_loader instead. This file is here for documentation purposes
 """
 
-FILE_NAME = "/home/erastos/Downloads/NetHealth Data/CommEvents(2-28-20)_study_start.csv"
+FILE_NAME = "./NetHealth Data/CommEvents(2-28-20)_study_start.csv"
 
 
 # Loads Data From File using a generator
@@ -97,30 +97,31 @@ def retrieve_ego_network_comm(egoid, num_records):
 if __name__ == '__main__':
     # Testing code while performing analysis
 
+    ld = load_data(FILE_NAME)
+    # for i in ld:
 
-    ld = load_data("/home/erastos/Downloads/NetHealth Data/CommEvents(2-28-20)_study_start.csv")
-    header_list = next(ld)
+    # header_list = next(ld)
     # reg = retrieve_ego_data(ld, header_list, 25000 * 20, 66642)
     # demo = retrieve_ego_demos("hs_1", "Private independent college-prep school")
     # check_demo_social_network("usedrugs_1", "Three times a week or more")
 
-    network_survey_file = open("/home/erastos/Downloads/NetHealth Data/NetWorkSurvey(2-28-20).csv")
+    network_survey_file = open("./NetHealth Data/NetWorkSurvey(2-28-20).csv")
     reader = csv.reader(network_survey_file)
     headers = next(reader)
     results = []
 
     # Open Results File
-    result_file = open("result_file.txt", "w")
+    # result_file = open("result_file.txt", "w")
 
-    already_checked = set()
-    for row in reader:
-        print(row[0])
-        if int(row[0]) not in already_checked:
-            already_checked.add(int(row[0]))
-            result = retrieve_ego_network_comm(int(row[0]), 25000 * 20)
-            results.append(result)
-            result_file.write("{}: {}\n".format(row[0], str(result)))
-
+    # already_checked = set()
+    # for row in reader:
+    #     print(row[0])
+    #     if int(row[0]) not in already_checked:
+    #         already_checked.add(int(row[0]))
+    #         result = retrieve_ego_network_comm(int(row[0]), 25000 * 20)
+    #         results.append(result)
+    #         result_file.write("{}: {}\n".format(row[0], str(result)))
+    #
     # retrieve_ego_network_comm(66642, 25000 * 20)
 
     # for row in reg:

@@ -1,16 +1,19 @@
 import pandas as pd
 from GraphClasses import CommEvent, idNode
-from pandas_load import open_files, remove_outlier_data
+# from pandas_load import open_files, remove_outlier_data
+from loader2 import open_files, Headers
 from math import floor
 import igraph
+import datetime
+import time
 
 
 def create_graph(slice):
     """Creates Networkx undirected graph of communication events of a given slice"""
     graph = igraph.Graph()
-    for index, row in slice.iterrows():
-        ego_node = idNode(row["egoid"], "Ego")
-        alter_node = idNode(row["alterid"], "Alter")
+    for row in slice:
+        ego_node = idNode(int(row[Headers.EGOID.value]), "Ego")
+        alter_node = idNode(int(row[Headers.ALTERID.value]), "Alter")
 
         if len(graph.vs) == 0 or ego_node.id not in list(graph.vs['name']):
             graph.add_vertex(ego_node.id)
@@ -25,21 +28,56 @@ def create_graph(slice):
     return graph
 
 
+def get_date_range(start_date, end_date):
+    start_datetime = datetime.datetime(*time.strptime(start_date, "%Y-%m-%d %H:%M:%S")[:6])
+    end_datetime = datetime.datetime(*time.strptime(end_date, "%Y-%m-%d %H:%M:%S")[:6])
+
+    time_delta = datetime.timedelta(days=1)
+    date_range = [start_datetime]
+    while date_range[-1] < end_datetime:
+        date_range.append(date_range[-1] + time_delta)
+    if date_range[-1] > end_datetime:
+        date_range.pop(-1)
+    date_range.append(end_datetime)
+    return date_range
+
+
+def get_data_in_timeslice(start_index, comm, end_date):
+    results = []
+    i = 0
+    for i in range(start_index, len(comm)):
+        date_string = comm[i][Headers.DATE.value] + ' ' + comm[i][Headers.TIME.value]
+        date_datetime = datetime.datetime(*time.strptime(date_string, "%Y-%m-%d %H:%M:%S")[:6])
+        if date_datetime > end_date:
+            break
+
+        results.append(comm[i])
+    results.pop(-1)
+    return results, i
+
+
 def get_snapshots(slice):
     """Divide communication data into date sets"""
-    datetime = slice["date"] + ' ' + slice["time"]
-    slice["datetime"] = datetime
-    slice = slice.set_index("datetime")
 
-    start_date = (slice[:1]["date"] + ' ' + slice[:1]["time"]).to_list()[0]
-    end_date = (slice[-1:]["date"] + ' ' + slice[-1:]["time"]).to_list()[0]
+    start_date = slice[0][Headers.DATE.value] + ' ' + slice[0][Headers.TIME.value]
+    end_date = slice[-1][Headers.DATE.value] + ' ' + slice[-1][Headers.TIME.value]
 
-    dates = pd.date_range(start_date, end_date, freq='D').to_list()
-    if end_date not in dates:
-        dates.append(end_date)
-    for i in range(len(dates) - 1):
-        print("{} -> {}".format(dates[i], dates[i+1]))
-        yield slice[str(dates[i]):str(dates[i + 1])]
+    # start_date = (slice[:1]["date"] + ' ' + slice[:1]["time"]).to_list()[0]
+    # end_date = (slice[-1:]["date"] + ' ' + slice[-1:]["time"]).to_list()[0]
+
+    date_range = get_date_range(start_date, end_date)
+    index = 0
+    for i in range(len(date_range) - 1):
+        result, index = get_data_in_timeslice(index, slice, date_range[i+1])
+        print("{} -> {}".format(date_range[i], date_range[i + 1]))
+        yield result
+
+    # dates = pd.date_range(start_date, end_date, freq='D').to_list()
+    # if end_date not in dates:
+    #     dates.append(end_date)
+    # for i in range(len(dates) - 1):
+    #     print("{} -> {}".format(dates[i], dates[i + 1]))
+    #     yield slice[str(dates[i]):str(dates[i + 1])]
 
 
 def generate_lifetime_group_table(groupset, table, compare_table, mergedSet=None, exist=False):
@@ -95,8 +133,8 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
             member_set_j = get_member_set(time_2[j], time_2_meetings, time_2_lifetime_table, meetings_fraction)
             # Member Amount Criteria holds after a certain amount of time as set by Time to Meetings
             if len(time_1[i].symmetric_difference(time_2[j])) <= merge_threshold \
-                    and (not meetings_fraction or len(member_set_i.symmetric_difference(member_set_j)) <= merge_threshold):
-
+                    and (
+                    not meetings_fraction or len(member_set_i.symmetric_difference(member_set_j)) <= merge_threshold):
                 group = time_1[i].union(time_2[j])
                 # If a group is merged, then it means that it existed in the next time slice, meaning that it had another meeting (Assumption that could be wrong)
                 merged_groups.append(group)
@@ -139,7 +177,6 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
 def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fraction):
     """Graph merging driver function"""
 
-    comm = remove_outlier_data(comm)
     gs = get_snapshots(comm)
 
     # Initial Data Population
@@ -176,7 +213,8 @@ def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fractio
                                                                                        scc_group_lifetime_table,
                                                                                        merge_threshold,
                                                                                        meeting_fraction *
-                                                                                       floor(t_i_counter // time_to_meeting_fraction))
+                                                                                       floor(
+                                                                                           t_i_counter // time_to_meeting_fraction))
         prev_groups = result_groups
         prev_groups_meeting = result_group_meetings
         prev_group_lifetime_table = result_group_lifetime_table
@@ -187,7 +225,9 @@ def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fractio
 
 
 if __name__ == '__main__':
-    NUM_RECORDS = 400000
-    network, basic, comm = open_files(NUM_RECORDS)
+    NUM_RECORDS = 200000
+    comm, basic, network = open_files(NUM_RECORDS)
     result = graph_merge(comm, 3, 0.5, 1)
     print(result[1])
+
+    get_snapshots(comm)
