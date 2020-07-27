@@ -25,7 +25,7 @@ if __name__ == '__main__':
     }
     comm, basic, network = open_files(files, int(sys.argv[4]))
 
-    data = graph_merge(comm, 6, 0.5, 3)
+    data = graph_merge(comm, 10, 0.5, 3)
     results = create_data(data)
     output_string = \
         """
