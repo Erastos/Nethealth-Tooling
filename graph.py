@@ -29,6 +29,7 @@ def create_graph(slice):
 
 
 def get_date_range(start_date, end_date):
+    """Get range of datetimes from start_date to end_date incremented by a timedelta"""
     start_datetime = datetime.datetime(*time.strptime(start_date, "%Y-%m-%d %H:%M:%S")[:6])
     end_datetime = datetime.datetime(*time.strptime(end_date, "%Y-%m-%d %H:%M:%S")[:6])
 
@@ -43,6 +44,7 @@ def get_date_range(start_date, end_date):
 
 
 def get_data_in_timeslice(start_index, comm, end_date):
+    """Get all of the data in between a start index and an end_date"""
     results = []
     i = 0
     for i in range(start_index, len(comm)):
@@ -105,6 +107,7 @@ def generate_lifetime_group_table(groupset, table, compare_table, mergedSet=None
 
 
 def get_member_set(groupset, group_meetings, lifetime_table, member_threshold):
+    """Create a set including only a members groups"""
     if member_threshold == 0:
         return frozenset({-1})
 

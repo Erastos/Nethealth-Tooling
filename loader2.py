@@ -9,6 +9,7 @@ files = {
 
 
 class Headers(Enum):
+    """Enum that describes the indicies of the communication data """
     EPOCHTIME = 0
     DATE = 1
     TIME = 2
@@ -31,7 +32,7 @@ class Headers(Enum):
 
 
 def load_data(filename, numRecords):
-    """Loads Data From File using a generator"""
+    """Loads Data From File"""
     file = open(filename, 'r', buffering=1)
     reader = csv.reader(file)
     next(reader)
@@ -45,6 +46,7 @@ def load_data(filename, numRecords):
 
 
 def open_files(files, numRecords):
+    """Loads data from all files"""
     comm = load_data(files['Comm'], numRecords)
     basic = load_data(files['Basic'], 0)
     network = load_data(files['Network'], 0)
