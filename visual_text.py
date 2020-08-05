@@ -10,12 +10,14 @@ def create_data(data):
 
     average_attendance_per_egoid = []
     for egoid, groupsets in data[2].items():
+        attendance_rates = []
         for group, attendance in groupsets.items():
-            attendence_rates = list(map(lambda x: x / data[1][group], groupsets.values()))
-            average_attendance_per_egoid.append(sum(attendence_rates) / len(attendence_rates))
+            assert attendance <= data[1][group]
+            attendance_rates.append(attendance / data[1][group])
+        average_attendance_per_egoid.append(sum(attendance_rates) / len(attendance_rates))
 
     average_attendance = sum(average_attendance_per_egoid) / len(average_attendance_per_egoid)
-    return length, average_group_size, meetings_per_group, average_attendance
+    return length, average_group_size, meetings_per_group, average_attendance, average_attendance_per_egoid
 
 
 if __name__ == '__main__':
@@ -56,8 +58,8 @@ if __name__ == '__main__':
         Number of Groups: {}
         Average Group Size: {:.4f}
         Meetings Per Group: {:.4f}
-        Average Person Attendance: {:.4f}\n
-        """.format(m_thresh, j, time_to_m, results[0], results[1], results[2], results[3])
+        Average Person Attendance: {:.4f} ({:.4f} / {:.4f} )\n
+        """.format(m_thresh, j, time_to_m, results[0], results[1], results[2], results[3], sum(results[4]), len(results[4]))
         output_file.write(output_string)
         output_file.flush()
     output_file.close()
