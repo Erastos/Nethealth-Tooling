@@ -13,6 +13,7 @@ def create_data(data):
         attendance_rates = []
         for group, attendance in groupsets.items():
             assert attendance <= data[1][group]
+            print("({0:}) / ({1:})".format(attendance, data[1][group]))
             attendance_rates.append(attendance / data[1][group])
         average_attendance_per_egoid.append(sum(attendance_rates) / len(attendance_rates))
 

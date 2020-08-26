@@ -70,7 +70,7 @@ def get_snapshots(slice):
     date_range = get_date_range(start_date, end_date)
     index = 0
     for i in range(len(date_range) - 1):
-        result, index = get_data_in_timeslice(index, slice, date_range[i+1])
+        result, index = get_data_in_timeslice(index, slice, date_range[i + 1])
         print("{} -> {}".format(date_range[i], date_range[i + 1]))
         yield result
 
@@ -91,6 +91,7 @@ def generate_lifetime_group_table(groupset, table, compare_table, mergedSet=None
     for egoid in set_to_add:
         if egoid in compare_table and set_to_add in compare_table[egoid]:
             value = compare_table[egoid][set_to_add]
+            # NOTE: This appears to be where a bug is. Not sure if it is the one causing the assert errors
             if mergedSet and egoid in groupset:
                 value += 1
         else:
@@ -138,10 +139,13 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
             if len(time_1[i].symmetric_difference(time_2[j])) <= merge_threshold \
                     and (
                     not meetings_fraction or len(member_set_i.symmetric_difference(member_set_j)) <= merge_threshold):
+                # NOTE: This might need to be member set's get merged (where applicable)
                 group = time_1[i].union(time_2[j])
                 # If a group is merged, then it means that it existed in the next time slice, meaning that it had another meeting (Assumption that could be wrong)
                 merged_groups.append(group)
-                result_meeting[group] = time_1_meetings[time_1[i]] + 1
+                # NOTE: This is the line that is causing the assert issues
+                # result_meeting[group] = time_1_meetings[time_1[i]] + 1
+                result_meeting[group] = time_1_meetings[group] + 1 if group in time_1_meetings else time_1_meetings[time_1[i]] + 1
                 result_lifetime_table = generate_lifetime_group_table(time_2[j], result_lifetime_table,
                                                                       time_1_lifetime_table, group)
     result = []
@@ -174,6 +178,11 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
                                                                   time_2_lifetime_table, exist=True)
 
     result.extend(merged_groups)
+
+    for egoid, groupsets in result_lifetime_table.items():
+        for group, attendance in groupsets.items():
+            assert attendance <= result_meeting[group]
+
     return result, result_meeting, result_lifetime_table
 
 
