@@ -4,3 +4,4 @@ Pipfile.lock
 *.txt
 NetHealth Data/
 __pycache__/
+venv
