@@ -45,7 +45,7 @@ if __name__ == '__main__':
         Average Group Size: {:.4f}
         Meetings Per Group: {:.4f}
         Average Person Attendance: {:.4f} ({:.4f} / {:.4f} )\n
-        """.format(m_thresh, j, time_to_m, results[0], results[1], results[2], results[3], sum(results[4]), len(results[4]))
+        """.format(i, m_ratio, time_to_m, results[0], results[1], results[2], results[3], sum(results[4]), len(results[4]))
         output_file.write(output_string)
 
     # print("Begin Analysis")
