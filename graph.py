@@ -135,12 +135,21 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
             # Calculate Member Sets, sets containing people who attended meetings above a certain fraction (personal meetings/total group meetings)
             member_set_i = get_member_set(time_1[i], time_1_meetings, time_1_lifetime_table, meetings_fraction)
             member_set_j = get_member_set(time_2[j], time_2_meetings, time_2_lifetime_table, meetings_fraction)
+            # if not len(member_set_i) or not len(member_set_j):
+            #     continue
             # Member Amount Criteria holds after a certain amount of time as set by Time to Meetings
+            memThreshBool = not meetings_fraction or len(member_set_i.symmetric_difference(member_set_j)) <= merge_threshold
             if len(time_1[i].symmetric_difference(time_2[j])) <= merge_threshold \
                     and (
-                    not meetings_fraction or len(member_set_i.symmetric_difference(member_set_j)) <= merge_threshold):
+                    memThreshBool):
                 # NOTE: This might need to be member set's get merged (where applicable)
-                group = time_1[i].union(time_2[j])
+                if memThreshBool:
+                    group = member_set_i.union(member_set_j)
+                else:
+                    group = time_1[i].union(time_2[j])
+                assert memThreshBool
+                # assert time_1[i].union(time_2[j]) == member_set_i.union(member_set_j)
+
                 # If a group is merged, then it means that it existed in the next time slice, meaning that it had another meeting (Assumption that could be wrong)
                 merged_groups.append(group)
                 # NOTE: This is the line that is causing the assert issues
@@ -224,9 +233,7 @@ def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fractio
                                                                                        scc, scc_meeting,
                                                                                        scc_group_lifetime_table,
                                                                                        merge_threshold,
-                                                                                       meeting_fraction *
-                                                                                       floor(
-                                                                                           t_i_counter // time_to_meeting_fraction))
+                                                                                       meeting_fraction)
         prev_groups = result_groups
         prev_groups_meeting = result_group_meetings
         prev_group_lifetime_table = result_group_lifetime_table

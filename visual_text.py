@@ -34,9 +34,25 @@ if __name__ == '__main__':
     comm, basic, network = open_files(files, int(sys.argv[4]))
     output_file = open("1hr.txt", "w")
 
+    # print("Begin Analysis")
+    # for i in range(1, 4):
+    #     data = graph_merge(comm, i, 0.5, 3)
+    #     results = create_data(data)
+    #     output_string = \
+    #         """
+    #         {}, {}, {}
+    #     Number of Groups: {}
+    #     Average Group Size: {:.4f}
+    #     Meetings Per Group: {:.4f}
+    #     Average Person Attendance: {:.4f} ({:.4f} / {:.4f})\n
+    #     """.format(i, m_ratio, time_to_m, results[0], results[1], results[2], results[3], sum(results[4]), len(results[4]))
+    #     output_file.write(output_string)
+    # output_file.flush()
+
     print("Begin Analysis")
-    for i in range(1, 4):
-        data = graph_merge(comm, i, 0.5, 3)
+    m_ratio_values = np.linspace(0.5, 0.9, 5)
+    for j in m_ratio_values:
+        data = graph_merge(comm, 1, j, 2)
         results = create_data(data)
         output_string = \
             """
@@ -45,22 +61,7 @@ if __name__ == '__main__':
         Average Group Size: {:.4f}
         Meetings Per Group: {:.4f}
         Average Person Attendance: {:.4f} ({:.4f} / {:.4f} )\n
-        """.format(i, m_ratio, time_to_m, results[0], results[1], results[2], results[3], sum(results[4]), len(results[4]))
+        """.format(m_thresh, j, time_to_m, results[0], results[1], results[2], results[3], sum(results[4]), len(results[4]))
         output_file.write(output_string)
-
-    # print("Begin Analysis")
-    # m_ratio_values = np.linspace(0.3, 0.7, 5)
-    # for j in m_ratio_values:
-    #     data = graph_merge(comm, 1, j, 3)
-    #     results = create_data(data)
-    #     output_string = \
-    #         """
-    #         {}, {}, {}
-    #     Number of Groups: {}
-    #     Average Group Size: {:.4f}
-    #     Meetings Per Group: {:.4f}
-    #     Average Person Attendance: {:.4f} ({:.4f} / {:.4f} )\n
-    #     """.format(m_thresh, j, time_to_m, results[0], results[1], results[2], results[3], sum(results[4]), len(results[4]))
-    #     output_file.write(output_string)
-    #     output_file.flush()
+        output_file.flush()
     output_file.close()
