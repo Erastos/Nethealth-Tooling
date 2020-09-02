@@ -4,6 +4,10 @@ from GraphClasses import CommEvent, idNode
 from pandas_load import open_files
 from math import floor
 
+"""
+NOTE: This file is depreciated. This is merely here for archiving
+"""
+
 
 def create_graph(slice):
     """Creates Networkx undirected graph of communication events of a given slice"""

@@ -1,28 +1,28 @@
-from GraphClasses import CommEvent, idNode
-# from pandas_load import open_files, remove_outlier_data
-from loader2 import open_files, Headers
-from math import floor
-import igraph
 import datetime
-import time
 import sys
+import time
+
+import igraph
+
+from GraphClasses import idNode
+from loader2 import open_files, Headers
 
 
 def create_graph(slice):
-    """Creates Networkx undirected graph of communication events of a given slice"""
+    """Creates Igraph undirected graph of communication events of a given slice"""
     graph = igraph.Graph()
     for row in slice:
+        # Creates nodes to add into the graph
         ego_node = idNode(int(row[Headers.EGOID.value]), "Ego")
         alter_node = idNode(int(row[Headers.ALTERID.value]), "Alter")
-
         if len(graph.vs) == 0 or ego_node.id not in list(graph.vs['name']):
             graph.add_vertex(ego_node.id)
 
+        # Adds edge to the graph if the alterid in question was also a member of the study
         if 10000 <= alter_node.id <= 99999:
             if len(list(graph.vs)) == 0 or alter_node.id not in list(graph.vs['name']):
                 graph.add_vertex(alter_node.id)
 
-            # comm_event = CommEvent(row["egoid"], row["alterid"], row["epochtime"])
             graph.add_edge(graph.vs.select(lambda vertex: vertex['name'] == ego_node.id)[0],
                            graph.vs.select(lambda vertex: vertex['name'] == alter_node.id)[0])
     return graph
@@ -64,8 +64,6 @@ def get_snapshots(slice):
     start_date = slice[0][Headers.DATE.value] + ' ' + slice[0][Headers.TIME.value]
     end_date = slice[-1][Headers.DATE.value] + ' ' + slice[-1][Headers.TIME.value]
 
-    # start_date = (slice[:1]["date"] + ' ' + slice[:1]["time"]).to_list()[0]
-    # end_date = (slice[-1:]["date"] + ' ' + slice[-1:]["time"]).to_list()[0]
 
     date_range = get_date_range(start_date, end_date)
     index = 0
@@ -74,13 +72,6 @@ def get_snapshots(slice):
         print("{} -> {}".format(date_range[i], date_range[i + 1]))
         yield result
 
-    # dates = pd.date_range(start_date, end_date, freq='D').to_list()
-    # if end_date not in dates:
-    #     dates.append(end_date)
-    # for i in range(len(dates) - 1):
-    #     print("{} -> {}".format(dates[i], dates[i + 1]))
-    #     yield slice[str(dates[i]):str(dates[i + 1])]
-
 
 def generate_lifetime_group_table(groupset, table, compare_table, mergedSet=None, exist=False):
     """Create Group Lifetime Table, a table which contains a egoids's attendance number per individual group"""
@@ -88,10 +79,10 @@ def generate_lifetime_group_table(groupset, table, compare_table, mergedSet=None
         set_to_add = mergedSet
     else:
         set_to_add = groupset
+
     for egoid in set_to_add:
         if egoid in compare_table and set_to_add in compare_table[egoid]:
             value = compare_table[egoid][set_to_add]
-            # NOTE: This appears to be where a bug is. Not sure if it is the one causing the assert errors
             if mergedSet and egoid in groupset:
                 value += 1
         else:
@@ -135,8 +126,6 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
             # Calculate Member Sets, sets containing people who attended meetings above a certain fraction (personal meetings/total group meetings)
             member_set_i = get_member_set(time_1[i], time_1_meetings, time_1_lifetime_table, meetings_fraction)
             member_set_j = get_member_set(time_2[j], time_2_meetings, time_2_lifetime_table, meetings_fraction)
-            # if not len(member_set_i) or not len(member_set_j):
-            #     continue
             # Member Amount Criteria holds after a certain amount of time as set by Time to Meetings
             memThreshBool = not meetings_fraction or len(member_set_i.symmetric_difference(member_set_j)) <= merge_threshold
             if len(time_1[i].symmetric_difference(time_2[j])) <= merge_threshold \
@@ -148,16 +137,31 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
                 else:
                     group = time_1[i].union(time_2[j])
                 assert memThreshBool
-                # assert time_1[i].union(time_2[j]) == member_set_i.union(member_set_j)
 
                 # If a group is merged, then it means that it existed in the next time slice, meaning that it had another meeting (Assumption that could be wrong)
                 merged_groups.append(group)
                 # NOTE: This is the line that is causing the assert issues
-                # result_meeting[group] = time_1_meetings[time_1[i]] + 1
                 result_meeting[group] = time_1_meetings[group] + 1 if group in time_1_meetings else time_1_meetings[time_1[i]] + 1
                 result_lifetime_table = generate_lifetime_group_table(time_2[j], result_lifetime_table,
                                                                       time_1_lifetime_table, group)
     result = []
+    result_lifetime_table = add_groups_back_in(merged_groups, result, result_lifetime_table, result_meeting, time_1,
+                                               time_1_lifetime_table, time_1_meetings)
+    result_lifetime_table = add_groups_back_in(merged_groups, result, result_lifetime_table, result_meeting, time_2, time_2_lifetime_table, time_2_meetings)
+
+    result.extend(merged_groups)
+
+    # Checks that there is never an egoid that has a attendance rate greater than the group that it is in
+    for egoid, groupsets in result_lifetime_table.items():
+        for group, attendance in groupsets.items():
+            assert attendance <= result_meeting[group]
+
+    return result, result_meeting, result_lifetime_table
+
+
+def add_groups_back_in(merged_groups, result, result_lifetime_table, result_meeting, time_1, time_1_lifetime_table,
+                       time_1_meetings):
+    """Add groups that were not merged back into results, and update their meeting values"""
     for i in range(len(time_1)):
         is_subset = False
         for j in range(len(merged_groups)):
@@ -171,28 +175,7 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
 
             result_lifetime_table = generate_lifetime_group_table(time_1[i], result_lifetime_table,
                                                                   time_1_lifetime_table, exist=True)
-
-    for j in range(len(time_2)):
-        is_subset = False
-        for k in range(len(merged_groups)):
-            if time_2[j].issubset(merged_groups[k]):
-                is_subset = True
-                break
-        if not is_subset:
-            # Time 2 Group and Egoid Meeting Attendence are not incremented here as this is created in the graph_merge function
-            result.append(time_2[j])
-            result_meeting[time_2[j]] = time_2_meetings[time_2[j]]
-
-            result_lifetime_table = generate_lifetime_group_table(time_2[j], result_lifetime_table,
-                                                                  time_2_lifetime_table, exist=True)
-
-    result.extend(merged_groups)
-
-    for egoid, groupsets in result_lifetime_table.items():
-        for group, attendance in groupsets.items():
-            assert attendance <= result_meeting[group]
-
-    return result, result_meeting, result_lifetime_table
+    return result_lifetime_table
 
 
 def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fraction):
@@ -202,11 +185,7 @@ def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fractio
 
     # Initial Data Population
     t_1 = next(gs)
-    g1 = create_graph(t_1)
-    # Gets Collected Components of len greater than 2
-    initial_groups = [{g1.vs[group[i]]['name'] for i in range(len(group))} for group in g1.clusters() if len(group) > 2]
-    initial_groups = list(map(frozenset, initial_groups))
-    initial_groups_meeting = {group: 1 for group in initial_groups}
+    initial_groups, initial_groups_meeting = get_components(t_1)
 
     prev_groups = initial_groups
     prev_groups_meeting = initial_groups_meeting
@@ -218,10 +197,11 @@ def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fractio
     results = []
     t_i_counter = 1
     for t_i in gs:
-        g = create_graph(t_i)
-        scc = [{g.vs[group[i]]['name'] for i in range(len(group))} for group in g.clusters() if len(group) > 2]
-        scc = list(map(frozenset, scc))
-        scc_meeting = {group: 1 for group in scc}
+        # g = create_graph(t_i)
+        # scc = [{g.vs[group[i]]['name'] for i in range(len(group))} for group in g.clusters() if len(group) > 2]
+        # scc = list(map(frozenset, scc))
+        # scc_meeting = {group: 1 for group in scc}
+        scc, scc_meeting = get_components(t_i)
 
         scc_group_lifetime_table = {}
         for group in scc:
@@ -241,6 +221,16 @@ def graph_merge(comm, merge_threshold, meeting_fraction, time_to_meeting_fractio
 
         results.append((result_groups, result_group_meetings, result_group_lifetime_table))
     return results[-1]
+
+
+def get_components(t_1):
+    """Generate a Graph and get its connected componets of the graph"""
+    g1 = create_graph(t_1)
+    # Gets Collected Components of len greater than 2
+    initial_groups = [{g1.vs[group[i]]['name'] for i in range(len(group))} for group in g1.clusters() if len(group) > 2]
+    initial_groups = list(map(frozenset, initial_groups))
+    initial_groups_meeting = {group: 1 for group in initial_groups}
+    return initial_groups, initial_groups_meeting
 
 
 if __name__ == '__main__':

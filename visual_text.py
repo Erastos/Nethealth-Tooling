@@ -34,6 +34,7 @@ if __name__ == '__main__':
     comm, basic, network = open_files(files, int(sys.argv[4]))
     output_file = open("1hr.txt", "w")
 
+    # NOTE: Keep this Comment Here! This a separate test function for this file
     # print("Begin Analysis")
     # for i in range(1, 4):
     #     data = graph_merge(comm, i, 0.5, 3)

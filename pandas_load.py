@@ -1,6 +1,10 @@
 import pandas as pd
 import csv
 
+"""
+NOTE: This file is depreciated. This file is here for archiving purposes
+"""
+
 # Location of files to pull data from
 files = {
     "Network Survey": "NetHealth Data/NetWorkSurvey(2-28-20).csv",
