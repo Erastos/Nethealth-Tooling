@@ -139,11 +139,12 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
                 assert memThreshBool
 
                 # If a group is merged, then it means that it existed in the next time slice, meaning that it had another meeting (Assumption that could be wrong)
-                merged_groups.append(group)
-                # NOTE: This is the line that is causing the assert issues
-                result_meeting[group] = time_1_meetings[group] + 1 if group in time_1_meetings else time_1_meetings[time_1[i]] + 1
-                result_lifetime_table = generate_lifetime_group_table(time_2[j], result_lifetime_table,
-                                                                      time_1_lifetime_table, group)
+                if group not in merged_groups:
+                    merged_groups.append(group)
+                    # NOTE: This is the line that is causing the assert issues
+                    result_meeting[group] = time_1_meetings[group] + 1 if group in time_1_meetings else time_1_meetings[time_1[i]] + 1
+                    result_lifetime_table = generate_lifetime_group_table(time_2[j], result_lifetime_table,
+                                                                          time_1_lifetime_table, group)
     result = []
     result_lifetime_table = add_groups_back_in(merged_groups, result, result_lifetime_table, result_meeting, time_1,
                                                time_1_lifetime_table, time_1_meetings)
@@ -155,6 +156,11 @@ def merge_algo(time_1, time_1_meetings, time_1_lifetime_table, time_2, time_2_me
     for egoid, groupsets in result_lifetime_table.items():
         for group, attendance in groupsets.items():
             assert attendance <= result_meeting[group]
+
+    for i in range(len(result)):
+        for j in range(len(result)):
+            # NOTE: It appears that we have duplicates
+            assert i == j or result[i] != result[j]
 
     return result, result_meeting, result_lifetime_table
 
@@ -168,7 +174,7 @@ def add_groups_back_in(merged_groups, result, result_lifetime_table, result_meet
             if time_1[i].issubset(merged_groups[j]):
                 is_subset = True
                 break
-        if not is_subset:
+        if not is_subset and time_1[i] not in result:
             result.append(time_1[i])
             # Time 1 Group and Egoid Meeting Attendance are not incremented here, as time_1 is the combined results from all other previous time slices
             result_meeting[time_1[i]] = time_1_meetings[time_1[i]]
