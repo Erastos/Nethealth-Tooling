@@ -1,9 +1,12 @@
 from graph import open_files, graph_merge
+from data_util import freq_filter_data
 import sys
 import numpy as np
 
 
 def create_data(data):
+    """Perform Data Analysis on the resulting data """
+    freq_filter_data(data, 1, 1000)
     length = len(data[0])
     average_group_size = sum(list(map(len, data[0]))) / len(data[0])
     meetings_per_group = sum(data[1].values()) / len(data[1])
@@ -51,7 +54,7 @@ if __name__ == '__main__':
     # output_file.flush()
 
     print("Begin Analysis")
-    m_ratio_values = np.linspace(0.5, 0.9, 5)
+    m_ratio_values = np.linspace(0.5, 0.5, 1)
     for j in m_ratio_values:
         data = graph_merge(comm, 1, j, 2)
         results = create_data(data)
