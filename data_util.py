@@ -12,10 +12,15 @@ def remove_group(group, groupList, group_meetings, lifetime_data, removeEgoIds):
 
 
 def freq_filter_data(result_data, filter_time_amount, number_of_nodes):
+    for i in range(len(result_data[0])):
+        for j in range(len(result_data[0])):
+            # NOTE: It appears that we have duplicates
+            assert not (i != j and result_data[0][i] == result_data[0][j])
+
     groupList_copy = result_data[0].copy()
     for group in groupList_copy:
         if len(group) <= number_of_nodes and result_data[1][group] <= filter_time_amount:
-            remove_group(group, result_data[0], result_data[1], result_data[2], True)
+            remove_group(group, result_data[0], result_data[1], result_data[2], False)
 
 
 if __name__ == '__main__':
@@ -31,7 +36,7 @@ if __name__ == '__main__':
                 lifetimeTable[egoid][group] = 1
     data_result = [groupList, groupMeetings, lifetimeTable]
 
-freq_filter_data(data_result, 1, 2)
-print(groupList)
-print(groupMeetings)
-print(lifetimeTable)
+    freq_filter_data(data_result, 1, 2)
+    print(groupList)
+    print(groupMeetings)
+    print(lifetimeTable)
